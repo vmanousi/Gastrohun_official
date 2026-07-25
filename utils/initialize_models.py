@@ -193,9 +193,49 @@ def initialize_model(model_name,num_classes,feature_extracting,input_size=(224,2
         num_ftrs = classifier.in_features
         model_ft.heads = nn.Linear(num_ftrs,num_classes)   
         CNN_family = "VisionTransformer"
+# DINOv2
+    elif model_name in DINOV2_EMBED_DIMS:
+        backbone = torch.hub.load('facebookresearch/dinov2', model_name)
+        model_ft = DinoV2Classifier(backbone, DINOV2_EMBED_DIMS[model_name], num_classes)
+        set_parameter_requires_grad(model_ft, feature_extracting)
+        CNN_family = "DINOv2"
+# DINO (v1)
+    elif model_name in DINO_EMBED_DIMS:
+        backbone = torch.hub.load('facebookresearch/dino:main', model_name)
+        model_ft = DinoV2Classifier(backbone, DINO_EMBED_DIMS[model_name], num_classes)
+        set_parameter_requires_grad(model_ft, feature_extracting)
+        CNN_family = "DINO"
     else:
         print("Model not detected: {}".format(model_name))
     return model_ft, CNN_family
+
+DINOV2_EMBED_DIMS = {
+    "dinov2_vits14": 384,
+    "dinov2_vitb14": 768,
+    "dinov2_vitl14": 1024,
+    "dinov2_vitg14": 1536,
+}
+
+DINO_EMBED_DIMS = {
+    "dino_vits16": 384,
+    "dino_vits8": 384,
+    "dino_vitb16": 768,
+    "dino_vitb8": 768,
+}
+
+class DinoV2Classifier(nn.Module):
+    """Wraps a DINO/DINOv2 ViT backbone (self-supervised, torch.hub) with a
+    linear head so it exposes the same `.head` attribute convention the rest
+    of the codebase relies on for freezing/unfreezing (see
+    set_parameter_requires_grad and frozen_dino in finetuning_models.py)."""
+    def __init__(self, backbone, embed_dim, num_classes):
+        super().__init__()
+        self.backbone = backbone
+        self.head = nn.Linear(embed_dim, num_classes)
+
+    def forward(self, x):
+        features = self.backbone(x)
+        return self.head(features)
 
 def set_parameter_requires_grad(model_ft, feature_extracting):
     if hasattr(model_ft, 'fc'): 

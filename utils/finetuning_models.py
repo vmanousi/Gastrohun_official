@@ -144,6 +144,46 @@ def frozen_vit(model_ft,finetune_pct):
             param.requires_grad = bool(df_finetuning.loc[i,"Finetuning"])
     return model_ft
 
+def frozen_dino(model_ft, finetune_pct):
+    """Mirrors frozen_vit's logic (unfreeze the last finetune_pct% of transformer
+    blocks, plus the patch-embedding stem only if finetune_pct > 95) but uses
+    DINOv2's own module names (backbone.blocks / backbone.patch_embed) instead
+    of torchvision ViT's (encoder.layers / conv_proj). model_ft is a
+    DinoV2Classifier (see initialize_models.py)."""
+    for param in model_ft.parameters():
+        param.requires_grad = True
+
+    params = []
+    block_counter = 0
+    for layer in model_ft.backbone.blocks:
+        is_trainable = any(param.requires_grad for param in layer.parameters())
+        params.append({'Layer Feature': f"block_{block_counter}", 'No Feature': block_counter, 'Trainable': is_trainable})
+        block_counter += 1
+
+    df_finetuning = pd.DataFrame(params)
+    df_finetuning["Finetuning"] = False
+
+    cant_frozen = int((100 - finetune_pct) * len(df_finetuning[df_finetuning["Trainable"] == True]) / 100)
+    if finetune_pct > 95:
+        for param in model_ft.backbone.patch_embed.parameters():
+            param.requires_grad = True
+    else:
+        for param in model_ft.backbone.patch_embed.parameters():
+            param.requires_grad = False
+
+    cont = 1
+    for idx in df_finetuning[df_finetuning["Trainable"] == True].index:
+        if cont <= cant_frozen:
+            df_finetuning.loc[idx, "Finetuning"] = False
+        else:
+            df_finetuning.loc[idx, "Finetuning"] = True
+        cont = cont + 1
+
+    for i, block in enumerate(model_ft.backbone.blocks):
+        for param in block.parameters():
+            param.requires_grad = bool(df_finetuning.loc[i, "Finetuning"])
+    return model_ft
+
 def frozen_layers(model_ft, finetune_pct):
     layer_counter = 0
     params = []

@@ -27,7 +27,7 @@ from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 
 sys.path.append('../../utils')
 from dataset_module_image import CustomDataset
-from finetuning_models import frozen_layers_classifier, frozen_layers_fc, frozen_ResNet, frozen_vit
+from finetuning_models import frozen_layers_classifier, frozen_layers_fc, frozen_ResNet, frozen_vit, frozen_dino
 from initialize_models import initialize_model
 from train_module_image import ModelTrainer
 
@@ -216,7 +216,9 @@ if __name__ == '__main__':
         elif CNN_family in ["ConvNeXt","VGG"]:
             model_ft = frozen_layers_classifier(trained_warmup_model, args.unfrozen_layers) 
         elif CNN_family ==  "VisionTransformer":
-            model_ft = frozen_vit(trained_warmup_model, args.unfrozen_layers)   
+            model_ft = frozen_vit(trained_warmup_model, args.unfrozen_layers)
+        elif CNN_family in ["DINOv2", "DINO"]:
+            model_ft = frozen_dino(trained_warmup_model, args.unfrozen_layers)
         elif CNN_family in ["ResNet","Wide ResNet"]:
             print("ResNet")
             model_ft = frozen_ResNet(trained_warmup_model, args.unfrozen_layers)
