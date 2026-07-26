@@ -72,9 +72,17 @@ def get_args_parser():
     parser.add_argument('--official_split', type=str, default=os.path.join("..", "..", "data","official_splits", "image_classification.csv"),
                         help='dataset path') 
     parser.add_argument('--label', default='Complete agreement', type=str,
-                        help='dataset path')     
-            
+                        help='dataset path')
+    parser.add_argument('--normalization', default='dataset', choices=['dataset', 'imagenet'], type=str,
+                        help="Pixel normalization stats: 'dataset' (GastroHUN-computed, original paper default) or "
+                             "'imagenet' (the stats DINO/DINOv2 backbones were actually pretrained with)")
+
     return parser
+
+NORMALIZATION_STATS = {
+    'dataset': ([0.5990, 0.3664, 0.2769], [0.2847, 0.2190, 0.1772]),
+    'imagenet': ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+}
 
 map_categories = {'A1':0,'L1':1,'P1':2,'G1':3, #Antrum
                   'A2':4,'L2':5,'P2':6,'G2':7,
@@ -123,11 +131,12 @@ if __name__ == '__main__':
     data_csv.reset_index(inplace=True,drop=True) 
     
     # Define transform
+    norm_mean, norm_std = NORMALIZATION_STATS[args.normalization]
     transform = transforms.Compose([
         transforms.Resize((args.input_size, args.input_size), interpolation=Image.LANCZOS),
         transforms.ToTensor(),
-        transforms.Normalize([0.5990, 0.3664, 0.2769], [0.2847, 0.2190, 0.1772])
-    ]) 
+        transforms.Normalize(norm_mean, norm_std)
+    ])
     
     # Get dataset and dataloader
     train_data = data_csv[data_csv['set_type'] == 'Train']
