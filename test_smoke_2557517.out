@@ -1,0 +1,26 @@
+The data path is valid. :D
+The official split is valid. :D
+The model path is valid. :D
+The output path exist :D.
+Metrics on the testing set
+                              Metric      Value
+0                           Accuracy  74.097136
+1                    Macro Precision  76.370017
+2                       Macro Recall  74.042031
+3                     Macro F1-score  73.592263
+4                 Weighted Precision  77.730698
+5                    Weighted Recall  74.097136
+6                  Weighted F1-score  74.336619
+7                    Micro Precision  74.097136
+8                       Micro Recall  74.097136
+9                     Micro F1-score  74.097136
+10  Matthews correlation coefficient  73.030673
+Test exit code: 0
+total 46420
+drwxr-xr-x. 2 vmanousi authusers     4096 Jul 25 21:28 .
+drwxr-xr-x. 3 vmanousi authusers     4096 Jul 25 20:43 ..
+-rw-r--r--. 1 vmanousi authusers 44835529 Jul 25 21:22 best-model-val_f1_macro.ckpt
+-rw-r--r--. 1 vmanousi authusers    29486 Jul 25 21:29 confusion_matrix.pdf
+-rw-r--r--. 1 vmanousi authusers     8491 Jul 25 21:22 history.xlsx
+-rw-r--r--. 1 vmanousi authusers      418 Jul 25 21:28 metrics.csv
+-rw-r--r--. 1 vmanousi authusers  2437454 Jul 25 21:28 predict.json

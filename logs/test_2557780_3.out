@@ -1,0 +1,27 @@
+Model: dino_vitb8, batch size: 40, host: cn50.it.auth.gr
+The data path is valid. :D
+The official split is valid. :D
+The model path is valid. :D
+The output path exist :D.
+Metrics on the testing set
+                              Metric      Value
+0                           Accuracy  83.686177
+1                    Macro Precision  83.901152
+2                       Macro Recall  82.944206
+3                     Macro F1-score  83.062216
+4                 Weighted Precision  84.370063
+5                    Weighted Recall  83.686177
+6                  Weighted F1-score  83.691102
+7                    Micro Precision  83.686177
+8                       Micro Recall  83.686177
+9                     Micro F1-score  83.686177
+10  Matthews correlation coefficient  82.931951
+Test exit code: 0
+total 338616
+drwxr-xr-x. 2 vmanousi authusers      4096 Jul 26 13:34 .
+drwxr-xr-x. 3 vmanousi authusers      4096 Jul 25 22:40 ..
+-rw-r--r--. 1 vmanousi authusers 343363917 Jul 25 22:55 best-model-val_f1_macro.ckpt
+-rw-r--r--. 1 vmanousi authusers     29195 Jul 26 13:34 confusion_matrix.pdf
+-rw-r--r--. 1 vmanousi authusers     11221 Jul 25 23:04 history.xlsx
+-rw-r--r--. 1 vmanousi authusers       417 Jul 26 13:34 metrics.csv
+-rw-r--r--. 1 vmanousi authusers   1947059 Jul 26 13:34 predict.json

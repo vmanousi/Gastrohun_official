@@ -1,0 +1,80 @@
+Using cache found in /home/v/vmanousi/.cache/torch/hub/facebookresearch_dino_main
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name              | Type               | Params | Mode  | FLOPs
+-------------------------------------------------------------------------
+0 | model             | DinoV2Classifier   | 21.7 M | train | 0    
+1 | criterion         | CrossEntropyLoss   | 0      | train | 0    
+2 | train_acc         | MulticlassAccuracy | 0      | train | 0    
+3 | train_f1_macro    | MulticlassF1Score  | 0      | train | 0    
+4 | train_f1_weighted | MulticlassF1Score  | 0      | train | 0    
+5 | val_acc           | MulticlassAccuracy | 0      | train | 0    
+6 | val_f1_macro      | MulticlassF1Score  | 0      | train | 0    
+7 | val_f1_weighted   | MulticlassF1Score  | 0      | train | 0    
+-------------------------------------------------------------------------
+8.9 K     Trainable params
+21.7 M    Non-trainable params
+21.7 M    Total params
+86.698    Total estimated model params size (MB)
+184       Modules in train mode
+0         Modules in eval mode
+0         Total Flops
+SLURM auto-requeueing enabled. Setting signal handlers.
+/home/v/vmanousi/diplomatiki2/.venv/lib/python3.11/site-packages/pytorch_lightning/utilities/_pytree.py:21: `isinstance(treespec, LeafSpec)` is deprecated, use `isinstance(treespec, TreeSpec) and treespec.is_leaf()` instead.
+`Trainer.fit` stopped: `max_epochs=10` reached.
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name              | Type               | Params | Mode  | FLOPs
+-------------------------------------------------------------------------
+0 | model             | DinoV2Classifier   | 21.7 M | train | 0    
+1 | criterion         | CrossEntropyLoss   | 0      | train | 0    
+2 | train_acc         | MulticlassAccuracy | 0      | train | 0    
+3 | train_f1_macro    | MulticlassF1Score  | 0      | train | 0    
+4 | train_f1_weighted | MulticlassF1Score  | 0      | train | 0    
+5 | val_acc           | MulticlassAccuracy | 0      | train | 0    
+6 | val_f1_macro      | MulticlassF1Score  | 0      | train | 0    
+7 | val_f1_weighted   | MulticlassF1Score  | 0      | train | 0    
+-------------------------------------------------------------------------
+9.0 M     Trainable params
+12.7 M    Non-trainable params
+21.7 M    Total params
+86.698    Total estimated model params size (MB)
+184       Modules in train mode
+0         Modules in eval mode
+0         Total Flops
+SLURM auto-requeueing enabled. Setting signal handlers.
+/home/v/vmanousi/diplomatiki2/.venv/lib/python3.11/site-packages/pytorch_lightning/utilities/_pytree.py:21: `isinstance(treespec, LeafSpec)` is deprecated, use `isinstance(treespec, TreeSpec) and treespec.is_leaf()` instead.
+Metric val_f1_macro improved. New best score: 0.192
+Epoch 0, global step 94: 'val_f1_macro' reached 0.19208 (best 0.19208), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dino_vits16/iter1/best-model-val_f1_macro.ckpt' as top 1
+Metric val_f1_macro improved by 0.410 >= min_delta = 0.0. New best score: 0.602
+Epoch 1, global step 188: 'val_f1_macro' reached 0.60169 (best 0.60169), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dino_vits16/iter1/best-model-val_f1_macro.ckpt' as top 1
+Epoch 2, global step 282: 'val_f1_macro' was not in top 1
+Metric val_f1_macro improved by 0.080 >= min_delta = 0.0. New best score: 0.682
+Epoch 3, global step 376: 'val_f1_macro' reached 0.68198 (best 0.68198), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dino_vits16/iter1/best-model-val_f1_macro.ckpt' as top 1
+Metric val_f1_macro improved by 0.038 >= min_delta = 0.0. New best score: 0.720
+Epoch 4, global step 470: 'val_f1_macro' reached 0.71979 (best 0.71979), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dino_vits16/iter1/best-model-val_f1_macro.ckpt' as top 1
+Metric val_f1_macro improved by 0.031 >= min_delta = 0.0. New best score: 0.751
+Epoch 5, global step 564: 'val_f1_macro' reached 0.75051 (best 0.75051), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dino_vits16/iter1/best-model-val_f1_macro.ckpt' as top 1
+Epoch 6, global step 658: 'val_f1_macro' was not in top 1
+Metric val_f1_macro improved by 0.011 >= min_delta = 0.0. New best score: 0.761
+Epoch 7, global step 752: 'val_f1_macro' reached 0.76120 (best 0.76120), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dino_vits16/iter1/best-model-val_f1_macro.ckpt' as top 1
+Epoch 8, global step 846: 'val_f1_macro' was not in top 1
+Metric val_f1_macro improved by 0.002 >= min_delta = 0.0. New best score: 0.763
+Epoch 9, global step 940: 'val_f1_macro' reached 0.76292 (best 0.76292), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dino_vits16/iter1/best-model-val_f1_macro.ckpt' as top 1
+Epoch 10, global step 1034: 'val_f1_macro' was not in top 1
+Epoch 11, global step 1128: 'val_f1_macro' was not in top 1
+Epoch 12, global step 1222: 'val_f1_macro' was not in top 1
+Epoch 13, global step 1316: 'val_f1_macro' was not in top 1
+Epoch 14, global step 1410: 'val_f1_macro' was not in top 1
+Epoch 15, global step 1504: 'val_f1_macro' was not in top 1
+Epoch 16, global step 1598: 'val_f1_macro' was not in top 1
+Epoch 17, global step 1692: 'val_f1_macro' was not in top 1
+Epoch 18, global step 1786: 'val_f1_macro' was not in top 1
+Monitored metric val_f1_macro did not improve in the last 10 records. Best score: 0.763. Signaling Trainer to stop.
+Epoch 19, global step 1880: 'val_f1_macro' was not in top 1

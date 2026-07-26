@@ -1,0 +1,94 @@
+Using cache found in /home/v/vmanousi/.cache/torch/hub/facebookresearch_dinov2_main
+/home/v/vmanousi/.cache/torch/hub/facebookresearch_dinov2_main/dinov2/layers/swiglu_ffn.py:51: UserWarning: xFormers is not available (SwiGLU)
+  warnings.warn("xFormers is not available (SwiGLU)")
+/home/v/vmanousi/.cache/torch/hub/facebookresearch_dinov2_main/dinov2/layers/attention.py:33: UserWarning: xFormers is not available (Attention)
+  warnings.warn("xFormers is not available (Attention)")
+/home/v/vmanousi/.cache/torch/hub/facebookresearch_dinov2_main/dinov2/layers/block.py:40: UserWarning: xFormers is not available (Block)
+  warnings.warn("xFormers is not available (Block)")
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name              | Type               | Params | Mode  | FLOPs
+-------------------------------------------------------------------------
+0 | model             | DinoV2Classifier   | 304 M  | train | 0    
+1 | criterion         | CrossEntropyLoss   | 0      | train | 0    
+2 | train_acc         | MulticlassAccuracy | 0      | train | 0    
+3 | train_f1_macro    | MulticlassF1Score  | 0      | train | 0    
+4 | train_f1_weighted | MulticlassF1Score  | 0      | train | 0    
+5 | val_acc           | MulticlassAccuracy | 0      | train | 0    
+6 | val_f1_macro      | MulticlassF1Score  | 0      | train | 0    
+7 | val_f1_weighted   | MulticlassF1Score  | 0      | train | 0    
+-------------------------------------------------------------------------
+23.6 K    Trainable params
+304 M     Non-trainable params
+304 M     Total params
+1,217.569 Total estimated model params size (MB)
+400       Modules in train mode
+0         Modules in eval mode
+0         Total Flops
+SLURM auto-requeueing enabled. Setting signal handlers.
+/home/v/vmanousi/diplomatiki2/.venv/lib/python3.11/site-packages/pytorch_lightning/utilities/_pytree.py:21: `isinstance(treespec, LeafSpec)` is deprecated, use `isinstance(treespec, TreeSpec) and treespec.is_leaf()` instead.
+`Trainer.fit` stopped: `max_epochs=10` reached.
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name              | Type               | Params | Mode  | FLOPs
+-------------------------------------------------------------------------
+0 | model             | DinoV2Classifier   | 304 M  | train | 0    
+1 | criterion         | CrossEntropyLoss   | 0      | train | 0    
+2 | train_acc         | MulticlassAccuracy | 0      | train | 0    
+3 | train_f1_macro    | MulticlassF1Score  | 0      | train | 0    
+4 | train_f1_weighted | MulticlassF1Score  | 0      | train | 0    
+5 | val_acc           | MulticlassAccuracy | 0      | train | 0    
+6 | val_f1_macro      | MulticlassF1Score  | 0      | train | 0    
+7 | val_f1_weighted   | MulticlassF1Score  | 0      | train | 0    
+-------------------------------------------------------------------------
+127 M     Trainable params
+176 M     Non-trainable params
+304 M     Total params
+1,217.569 Total estimated model params size (MB)
+400       Modules in train mode
+0         Modules in eval mode
+0         Total Flops
+SLURM auto-requeueing enabled. Setting signal handlers.
+/home/v/vmanousi/diplomatiki2/.venv/lib/python3.11/site-packages/pytorch_lightning/utilities/_pytree.py:21: `isinstance(treespec, LeafSpec)` is deprecated, use `isinstance(treespec, TreeSpec) and treespec.is_leaf()` instead.
+Metric val_f1_macro improved. New best score: 0.304
+Epoch 0, global step 233: 'val_f1_macro' reached 0.30376 (best 0.30376), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dinov2_vitl14/iter1/best-model-val_f1_macro.ckpt' as top 1
+Metric val_f1_macro improved by 0.149 >= min_delta = 0.0. New best score: 0.453
+Epoch 1, global step 466: 'val_f1_macro' reached 0.45256 (best 0.45256), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dinov2_vitl14/iter1/best-model-val_f1_macro.ckpt' as top 1
+Metric val_f1_macro improved by 0.186 >= min_delta = 0.0. New best score: 0.638
+Epoch 2, global step 699: 'val_f1_macro' reached 0.63846 (best 0.63846), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dinov2_vitl14/iter1/best-model-val_f1_macro.ckpt' as top 1
+Metric val_f1_macro improved by 0.001 >= min_delta = 0.0. New best score: 0.640
+Epoch 3, global step 932: 'val_f1_macro' reached 0.63979 (best 0.63979), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dinov2_vitl14/iter1/best-model-val_f1_macro.ckpt' as top 1
+Epoch 4, global step 1165: 'val_f1_macro' was not in top 1
+Metric val_f1_macro improved by 0.091 >= min_delta = 0.0. New best score: 0.731
+Epoch 5, global step 1398: 'val_f1_macro' reached 0.73054 (best 0.73054), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dinov2_vitl14/iter1/best-model-val_f1_macro.ckpt' as top 1
+Metric val_f1_macro improved by 0.019 >= min_delta = 0.0. New best score: 0.749
+Epoch 6, global step 1631: 'val_f1_macro' reached 0.74950 (best 0.74950), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dinov2_vitl14/iter1/best-model-val_f1_macro.ckpt' as top 1
+Epoch 7, global step 1864: 'val_f1_macro' was not in top 1
+Metric val_f1_macro improved by 0.000 >= min_delta = 0.0. New best score: 0.750
+Epoch 8, global step 2097: 'val_f1_macro' reached 0.74996 (best 0.74996), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dinov2_vitl14/iter1/best-model-val_f1_macro.ckpt' as top 1
+Epoch 9, global step 2330: 'val_f1_macro' was not in top 1
+Metric val_f1_macro improved by 0.022 >= min_delta = 0.0. New best score: 0.772
+Epoch 10, global step 2563: 'val_f1_macro' reached 0.77175 (best 0.77175), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dinov2_vitl14/iter1/best-model-val_f1_macro.ckpt' as top 1
+Epoch 11, global step 2796: 'val_f1_macro' was not in top 1
+Epoch 12, global step 3029: 'val_f1_macro' was not in top 1
+Epoch 13, global step 3262: 'val_f1_macro' was not in top 1
+Epoch 14, global step 3495: 'val_f1_macro' was not in top 1
+Metric val_f1_macro improved by 0.001 >= min_delta = 0.0. New best score: 0.773
+Epoch 15, global step 3728: 'val_f1_macro' reached 0.77258 (best 0.77258), saving model to '/home/v/vmanousi/Gastrohun_official/image_classification/output/Complete_agreement_40/dinov2_vitl14/iter1/best-model-val_f1_macro.ckpt' as top 1
+Epoch 16, global step 3961: 'val_f1_macro' was not in top 1
+Epoch 17, global step 4194: 'val_f1_macro' was not in top 1
+Epoch 18, global step 4427: 'val_f1_macro' was not in top 1
+Epoch 19, global step 4660: 'val_f1_macro' was not in top 1
+Epoch 20, global step 4893: 'val_f1_macro' was not in top 1
+Epoch 21, global step 5126: 'val_f1_macro' was not in top 1
+Epoch 22, global step 5359: 'val_f1_macro' was not in top 1
+Epoch 23, global step 5592: 'val_f1_macro' was not in top 1
+Epoch 24, global step 5825: 'val_f1_macro' was not in top 1
+Monitored metric val_f1_macro did not improve in the last 10 records. Best score: 0.773. Signaling Trainer to stop.
+Epoch 25, global step 6058: 'val_f1_macro' was not in top 1
