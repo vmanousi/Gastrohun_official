@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=gastrohun_orig16_repro
+#SBATCH --job-name=gastrohun_dino_repro
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --partition=ampere
@@ -7,26 +7,24 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
 #SBATCH --time=02:00:00
-#SBATCH --array=0-15
-#SBATCH --output=logs/train_orig16_repro_%A_%a.out
-#SBATCH --error=logs/train_orig16_repro_%A_%a.err
+#SBATCH --array=0-7
+#SBATCH --output=logs/train_dino_repro_%A_%a.out
+#SBATCH --error=logs/train_dino_repro_%A_%a.err
 
 set -euo pipefail
 source ~/diplomatiki2/.venv/bin/activate
 
-# The 16 models the paper itself trained (Scenario A, complete-agreement labels).
-MODELS=(convnext_tiny convnext_small convnext_base convnext_large \
-        resnet18 resnet34 resnet50 resnet101 resnet152 \
-        vgg11 vgg13 vgg16 \
-        vit_b_16 vit_b_32 vit_l_16 vit_l_32)
+# Full-parity DINO/DINOv2 track: same recipe as train_original16_repro.sh
+# (dataset normalization, uniform batch size, same everything else) -- NOT
+# the imagenet-norm track (train_dino_array_imagenet_norm.sh), which stays
+# untouched as a separate follow-up experiment. This is what actually goes
+# into Figure 5 alongside the baselines for the fair-comparison milestone.
+MODELS=(dino_vits16 dino_vits8 dino_vitb16 dino_vitb8 dinov2_vits14 dinov2_vitb14 dinov2_vitl14 dinov2_vitg14)
 MODEL=${MODELS[$SLURM_ARRAY_TASK_ID]}
 
-# IMAGECLASSIFICATION.md's own shipped example uses 60 -- the paper's methods
-# text says 40, and the code's argparse default is 10, with an unexplained
-# "#40" comment next to it. All three values trace back to the original
-# authors with no reconciliation. Defaults to 60 (the only one backed by a
-# concrete, runnable command they actually shipped); override with
-# `sbatch --export=ALL,UNFROZEN=40 train_original16_repro.sh` to test another value.
+# Must match the UNFROZEN value used for the baseline reproduction that won
+# (see analysis/original16_repro/compare_repro.py). Override with
+# `sbatch --export=ALL,UNFROZEN=40 train_dino_array_repro.sh`.
 UNFROZEN=${UNFROZEN:-60}
 
 cd ~/Gastrohun_official/image_classification/scripts
@@ -36,7 +34,7 @@ DATA_SPLIT=~/Gastrohun_official/official_splits/image_classification.csv
 OUTPUT_DIR=~/Gastrohun_official/image_classification/output/Complete_agreement_40_repro_unfrozen${UNFROZEN}/${MODEL}/iter1
 
 mkdir -p "$OUTPUT_DIR"
-echo "Model: $MODEL, unfrozen_layers: $UNFROZEN, host: $(hostname)"
+echo "Model: $MODEL, unfrozen_layers: $UNFROZEN, batch_size: 40 (uniform -- watch for OOM on vitl14/vitg14), host: $(hostname)"
 
 python train_image_classification.py \
   --model "$MODEL" \

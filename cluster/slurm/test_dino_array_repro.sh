@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=gastrohun_orig16_repro_test
+#SBATCH --job-name=gastrohun_dino_repro_test
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --partition=ampere
@@ -7,22 +7,17 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
 #SBATCH --time=00:30:00
-#SBATCH --array=0-15
-#SBATCH --output=logs/test_orig16_repro_%A_%a.out
-#SBATCH --error=logs/test_orig16_repro_%A_%a.err
+#SBATCH --array=0-7
+#SBATCH --output=logs/test_dino_repro_%A_%a.out
+#SBATCH --error=logs/test_dino_repro_%A_%a.err
 
 set -euo pipefail
 source ~/diplomatiki2/.venv/bin/activate
 
-MODELS=(convnext_tiny convnext_small convnext_base convnext_large \
-        resnet18 resnet34 resnet50 resnet101 resnet152 \
-        vgg11 vgg13 vgg16 \
-        vit_b_16 vit_b_32 vit_l_16 vit_l_32)
+MODELS=(dino_vits16 dino_vits8 dino_vitb16 dino_vitb8 dinov2_vits14 dinov2_vitb14 dinov2_vitl14 dinov2_vitg14)
 MODEL=${MODELS[$SLURM_ARRAY_TASK_ID]}
 
-# Must match the UNFROZEN value used in train_original16_repro.sh -- only
-# determines the output dir path here, not the eval logic itself. Override
-# with `sbatch --export=ALL,UNFROZEN=40 test_original16_repro.sh`.
+# Must match the UNFROZEN value used in train_dino_array_repro.sh.
 UNFROZEN=${UNFROZEN:-60}
 
 cd ~/Gastrohun_official/image_classification/scripts
