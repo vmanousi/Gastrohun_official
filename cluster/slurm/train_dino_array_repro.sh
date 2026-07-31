@@ -27,6 +27,20 @@ MODEL=${MODELS[$SLURM_ARRAY_TASK_ID]}
 # `sbatch --export=ALL,UNFROZEN=40 train_dino_array_repro.sh`.
 UNFROZEN=${UNFROZEN:-60}
 
+# dinov2_vitg14 (1.1B params, by far the largest model in this comparison --
+# the next biggest, ConvNeXt_Large, is ~200M) hit a genuine CUDA OOM at
+# batch_size=40/unfrozen=40 on a 40GB A100. Every other model, including
+# dinov2_vitl14 (304M), trains fine at 40. Documented single-model exception,
+# not a methodology choice.
+case "$MODEL" in
+  dinov2_vitg14)
+    BATCH_SIZE=16
+    ;;
+  *)
+    BATCH_SIZE=40
+    ;;
+esac
+
 cd ~/Gastrohun_official/image_classification/scripts
 
 DATA_PATH=~/Datasets/GastroHun/Labeled_Images_GastroHun
@@ -34,7 +48,7 @@ DATA_SPLIT=~/Gastrohun_official/official_splits/image_classification.csv
 OUTPUT_DIR=~/Gastrohun_official/image_classification/output/Complete_agreement_40_repro_unfrozen${UNFROZEN}/${MODEL}/iter1
 
 mkdir -p "$OUTPUT_DIR"
-echo "Model: $MODEL, unfrozen_layers: $UNFROZEN, batch_size: 40 (uniform -- watch for OOM on vitl14/vitg14), host: $(hostname)"
+echo "Model: $MODEL, unfrozen_layers: $UNFROZEN, batch_size: $BATCH_SIZE, host: $(hostname)"
 
 python train_image_classification.py \
   --model "$MODEL" \
@@ -49,7 +63,7 @@ python train_image_classification.py \
   --step_size_finetuning 5 \
   --unfrozen_layers "$UNFROZEN" \
   --num_workers 4 \
-  --batch_size 40 \
+  --batch_size "$BATCH_SIZE" \
   --data_path "$DATA_PATH" \
   --output_dir "$OUTPUT_DIR" \
   --official_split "$DATA_SPLIT" \
