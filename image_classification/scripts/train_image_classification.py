@@ -22,12 +22,12 @@ from tqdm import tqdm
 import torch
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from pytorch_lightning import Trainer
+from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 
 sys.path.append('../../utils')
 from dataset_module_image import CustomDataset
-from finetuning_models import frozen_layers_classifier, frozen_layers_fc, frozen_ResNet, frozen_vit, frozen_dino
+from finetuning_models import frozen_layers_classifier, frozen_layers_fc, frozen_ResNet, frozen_vit, frozen_dino, get_discriminative_param_groups
 from initialize_models import initialize_model
 from train_module_image import ModelTrainer
 
@@ -76,6 +76,13 @@ def get_args_parser():
     parser.add_argument('--normalization', default='dataset', choices=['dataset', 'imagenet'], type=str,
                         help="Pixel normalization stats: 'dataset' (GastroHUN-computed, original paper default) or "
                              "'imagenet' (the stats DINO/DINOv2 backbones were actually pretrained with)")
+    parser.add_argument('--backbone_lr_finetuning', type=float, default=None,
+                        help="If set, use discriminative learning rates in the fine-tuning phase: this value for "
+                             "the unfrozen backbone layers, --lr_finetuning for the head. Default: None, meaning "
+                             "every trainable parameter uses --lr_finetuning (original, single-LR behavior).")
+    parser.add_argument('--seed', type=int, default=None,
+                        help="Random seed for reproducibility (weight init, data shuffling). Default: None "
+                             "(unseeded, original behavior).")
 
     return parser
 
@@ -100,6 +107,8 @@ map_categories = {'A1':0,'L1':1,'P1':2,'G1':3, #Antrum
 if __name__ == '__main__':
     parser = get_args_parser()
     args = parser.parse_args()
+    if args.seed is not None:
+        seed_everything(args.seed, workers=True)
     #==========================================
     # Device handling
     #==========================================
@@ -234,9 +243,23 @@ if __name__ == '__main__':
         else:
             model_ft = frozen_layers_fc(trained_warmup_model, args.unfrozen_layers) 
             
+        # Discriminative learning rates (optional): a smaller LR for the
+        # already-unfrozen backbone layers, --lr_finetuning for the head.
+        # Off by default (--backbone_lr_finetuning unset) -- identical
+        # behavior to before in that case.
+        param_groups = None
+        if args.backbone_lr_finetuning is not None:
+            param_groups = get_discriminative_param_groups(
+                model_ft, trainable_attr,
+                backbone_lr=args.backbone_lr_finetuning,
+                head_lr=args.lr_finetuning,
+            )
+            print("Discriminative LR (backbone / head): {} / {}".format(
+                args.backbone_lr_finetuning, args.lr_finetuning))
+
         trainer_module = ModelTrainer(model=model_ft, num_classes=args.nb_classes, class_weights=class_weights,
-                                      learning_rate=args.lr_finetuning, gamma=args.gamma_finetuning, 
-                                      step_size=args.step_size_finetuning) 
+                                      learning_rate=args.lr_finetuning, gamma=args.gamma_finetuning,
+                                      step_size=args.step_size_finetuning, param_groups=param_groups)
         # Create a ModelCheckpoint callback to save the best model based on validation F1 macro score
         checkpoint_path = os.path.join(args.output_dir, 'best-model-val_f1_macro.ckpt')
         if os.path.exists(checkpoint_path):

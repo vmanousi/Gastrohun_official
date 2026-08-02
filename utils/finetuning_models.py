@@ -11,7 +11,29 @@ import os
 import torch
 from torchinfo import summary
 import torchvision.models as models
-import torch.nn as nn 
+import torch.nn as nn
+
+
+def get_discriminative_param_groups(model_ft, trainable_attr, backbone_lr, head_lr):
+    """Split a model's currently-trainable parameters into a backbone group
+    (whatever is unfrozen outside the head, e.g. the last unfrozen_layers%)
+    and a head group (the trainable_attr module: fc/classifier/head/heads),
+    so the optimizer can use a smaller LR for the pretrained backbone and a
+    larger LR for the head. Only meant for the fine-tuning phase, after
+    frozen_* has already set requires_grad on the desired backbone layers."""
+    head_module = getattr(model_ft, trainable_attr)
+    head_param_ids = {id(p) for p in head_module.parameters()}
+
+    backbone_params = [p for p in model_ft.parameters()
+                        if p.requires_grad and id(p) not in head_param_ids]
+    head_params = [p for p in head_module.parameters() if p.requires_grad]
+
+    param_groups = []
+    if backbone_params:
+        param_groups.append({'params': backbone_params, 'lr': backbone_lr})
+    if head_params:
+        param_groups.append({'params': head_params, 'lr': head_lr})
+    return param_groups
 
 
 def frozen_layers_classifier(model_ft, finetune_pct):

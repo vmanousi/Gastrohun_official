@@ -13,12 +13,17 @@ from torch import nn, optim
 from sklearn.utils.class_weight import compute_class_weight
 
 class ModelTrainer(pl.LightningModule):
-    def __init__(self, model, num_classes, class_weights, learning_rate=0.001, gamma=1, step_size=10):
+    def __init__(self, model, num_classes, class_weights, learning_rate=0.001, gamma=1, step_size=10, param_groups=None):
         super().__init__()
         self.model = model
         self.learning_rate = learning_rate
         self.gamma = gamma
         self.step_size = step_size
+        # Optional: list of {'params': [...], 'lr': ...} dicts (e.g. from
+        # get_discriminative_param_groups) for discriminative learning rates.
+        # When None (default), every trainable parameter uses learning_rate,
+        # exactly as before.
+        self.param_groups = param_groups
         self.criterion = nn.CrossEntropyLoss(weight=class_weights)
         self.num_classes = num_classes
 
@@ -90,7 +95,10 @@ class ModelTrainer(pl.LightningModule):
         self.val_f1_weighted.reset()
         
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        if self.param_groups is not None:
+            optimizer = optim.Adam(self.param_groups)
+        else:
+            optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=self.step_size, gamma=self.gamma)
         return [optimizer], [scheduler]
 
