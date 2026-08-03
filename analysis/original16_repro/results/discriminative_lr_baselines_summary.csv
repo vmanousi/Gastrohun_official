@@ -1,0 +1,17 @@
+model,family,single_lr_mean,discriminative_lr_mean,disclr_gain,ci_overlap
+vit_l_16,VisionTransformer,77.28,74.7,-2.58,False
+vgg11,VGG,81.1,78.04,-3.06,False
+convnext_small,ConvNeXt,86.23,82.22,-4.01,False
+vgg13,VGG,79.99,75.74,-4.25,False
+convnext_base,ConvNeXt,87.34,81.81,-5.53,False
+vit_l_32,VisionTransformer,80.67,74.61,-6.06,False
+convnext_large,ConvNeXt,88.1,79.39,-8.71,False
+vit_b_16,VisionTransformer,83.95,74.82,-9.13,False
+convnext_tiny,ConvNeXt,86.77,77.24,-9.54,False
+vgg16,VGG,81.95,72.2,-9.76,False
+vit_b_32,VisionTransformer,82.87,72.74,-10.13,False
+resnet18,ResNet,83.11,72.81,-10.3,False
+resnet101,ResNet,82.69,70.99,-11.7,False
+resnet50,ResNet,83.61,69.66,-13.95,False
+resnet152,ResNet,83.12,68.28,-14.84,False
+resnet34,ResNet,85.23,69.93,-15.3,False
