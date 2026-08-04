@@ -1,0 +1,5 @@
+model,frozen_mean,mid_lr_mean,single_lr_mean,discriminative_lr_mean,midlr_vs_singlelr_gain,midlr_vs_singlelr_ci_overlap
+dino_vits16,78.46,86.3,76.66,78.81,9.63,False
+dino_vits8,79.43,82.19,82.38,77.61,-0.19,True
+dino_vitb16,78.99,82.83,83.07,78.07,-0.25,True
+dino_vitb8,79.17,83.06,84.34,78.13,-1.28,False
