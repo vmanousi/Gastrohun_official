@@ -83,6 +83,16 @@ def get_args_parser():
     parser.add_argument('--seed', type=int, default=None,
                         help="Random seed for reproducibility (weight init, data shuffling). Default: None "
                              "(unseeded, original behavior).")
+    parser.add_argument('--warmup_only', action='store_true',
+                        help="If set, run Phase 1 (warm-up) only: train the head, save the resulting "
+                             "model's state_dict to <output_dir>/warmup_model.pt, then exit without "
+                             "running Phase 2. Lets a warm-up be trained once and reused by many "
+                             "fine-tuning runs (e.g. Optuna trials). Default: False (original behavior).")
+    parser.add_argument('--resume_from_warmup', type=str, default=None,
+                        help="Path to a state_dict saved by --warmup_only. If set, skip Phase 1 entirely "
+                             "and load these weights into a freshly-initialized (head-only-trainable) "
+                             "model before proceeding straight to Phase 2 fine-tuning. Default: None "
+                             "(original behavior: Phase 1 runs normally).")
 
     return parser
 
@@ -168,10 +178,86 @@ if __name__ == '__main__':
                                                   y=data_csv[args.label][data_csv['set_type']=="Train"].values )).to(torch.device("cuda"))
     print("Class Weights: ", class_weights) 
     
-    if os.path.exists(os.path.join(args.output_dir,"history.xlsx")) :
+    run_phase2 = False
+
+    if args.warmup_only:
+        #==========================================
+        # Warm-up-only mode (for Optuna: train Phase 1 once, cache it,
+        # reuse it across many fine-tuning trials instead of redoing it
+        # every trial).
+        #==========================================
+        warmup_ckpt_path = os.path.join(args.output_dir, "warmup_model.pt")
+        os.makedirs(args.output_dir, exist_ok=True)
+        if os.path.exists(warmup_ckpt_path):
+            print("================="*5)
+            print("Warm-up checkpoint already exists: {}".format(warmup_ckpt_path))
+            print("================="*5)
+            sys.exit(0)
+        print("Training model: Phase 1/1 - Warm-up only (--warmup_only)")
+        model_ft, CNN_family = initialize_model(args.model, args.nb_classes, True, (args.input_size,args.input_size))
+        for param in model_ft.parameters():
+            param.requires_grad = False
+        trainable_attr = None
+        for attr_name in ['fc', 'classifier', 'head', 'heads']:
+            if hasattr(model_ft, attr_name):
+                trainable_attr = attr_name
+                break
+        if trainable_attr is None:
+            raise AttributeError("The model does not have any of the expected attributes for training.")
+        for param in getattr(model_ft, trainable_attr).parameters():
+            param.requires_grad = True
+        model_ft = model_ft.to(device)
+
+        trainer_module = ModelTrainer(model=model_ft, num_classes=args.nb_classes, class_weights=class_weights,
+                                             learning_rate=args.lr_warmup, gamma=1,
+                                             step_size=args.num_epochs_warmup+1)
+        trainer_module = trainer_module.to(device)
+        trainer = Trainer(
+            max_epochs=args.num_epochs_warmup,
+            devices=1 if torch.cuda.is_available() else 0,
+            accelerator='gpu' if torch.cuda.is_available() else None,
+            logger=False,
+            check_val_every_n_epoch=1,
+            enable_checkpointing=False,
+            num_sanity_val_steps=1 if args.sanity_check else 0
+        )
+        trainer.fit(trainer_module, train_loader, valid_loader)
+        torch.save(trainer_module.model.state_dict(), warmup_ckpt_path)
+        print("Saved warm-up checkpoint to {}".format(warmup_ckpt_path))
+        sys.exit(0)
+
+    elif args.resume_from_warmup is not None:
+        #==========================================
+        # Resume-from-warmup mode (for Optuna: skip Phase 1, load the
+        # cached warm-up checkpoint, go straight to Phase 2 fine-tuning
+        # with this trial's sampled hyperparameters).
+        #==========================================
+        os.makedirs(args.output_dir, exist_ok=True)
+        print("Skipping Phase 1 -- loading warm-up checkpoint: {}".format(args.resume_from_warmup))
+        model_ft, CNN_family = initialize_model(args.model, args.nb_classes, True, (args.input_size,args.input_size))
+        for param in model_ft.parameters():
+            param.requires_grad = False
+        trainable_attr = None
+        for attr_name in ['fc', 'classifier', 'head', 'heads']:
+            if hasattr(model_ft, attr_name):
+                trainable_attr = attr_name
+                break
+        if trainable_attr is None:
+            raise AttributeError("The model does not have any of the expected attributes for training.")
+        for param in getattr(model_ft, trainable_attr).parameters():
+            param.requires_grad = True
+        model_ft.load_state_dict(torch.load(args.resume_from_warmup, map_location=device))
+        trained_warmup_model = model_ft.to(device)
+        warmup_train_history, warmup_val_history = pd.DataFrame(), pd.DataFrame()
+        start_warmup = time.time()
+        warmup_instruction_time = start_warmup
+        run_phase2 = True
+
+    elif os.path.exists(os.path.join(args.output_dir,"history.xlsx")):
         print("================="*5)
-        print("The model has been trained") 
-        print("================="*5)  
+        print("The model has been trained")
+        print("================="*5)
+
     else:
         os.makedirs(args.output_dir, exist_ok=True)
         print("Training model: Phase 1/2 - Warm-up")
@@ -180,7 +266,7 @@ if __name__ == '__main__':
             model_ft, CNN_family = initialize_model(args.model, args.nb_classes, True, (args.input_size,args.input_size))
             # Freeze all parameters of the model
             for param in model_ft.parameters():
-                param.requires_grad = False    
+                param.requires_grad = False
             # Identify the trainable attribute for the classifier layer
             trainable_attr = None
             for attr_name in ['fc', 'classifier', 'head', 'heads']:
@@ -189,7 +275,7 @@ if __name__ == '__main__':
                     break
             # Raise an error if the model does not have any expected attributes
             if trainable_attr is None:
-                raise AttributeError("The model does not have any of the expected attributes for training.")       
+                raise AttributeError("The model does not have any of the expected attributes for training.")
             for param in getattr(model_ft, trainable_attr).parameters():
                 param.requires_grad = True
         except AttributeError as e:
@@ -198,15 +284,15 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"Unexpected error: {e}")
             sys.exit(1)
-    
-        model_ft = model_ft.to(device) 
+
+        model_ft = model_ft.to(device)
         # --------- 1) Warm-up
         start_warmup = time.time()
         trainer_module = ModelTrainer(model=model_ft, num_classes=args.nb_classes, class_weights=class_weights,
-                                             learning_rate=args.lr_warmup, gamma=1, 
+                                             learning_rate=args.lr_warmup, gamma=1,
                                              step_size=args.num_epochs_warmup+1)
-        trainer_module = trainer_module.to(device)    
-    
+        trainer_module = trainer_module.to(device)
+
         # Initialize the Trainer from PyTorch Lightning
         trainer = Trainer(
             max_epochs=args.num_epochs_warmup,  # Maximum number of epochs for warmup phase
@@ -220,19 +306,22 @@ if __name__ == '__main__':
         trainer.fit(trainer_module, train_loader, valid_loader)
         trained_warmup_model = trainer_module.model
         warmup_train_history , warmup_val_history  = trainer_module.metrics_to_dataframe()
-        warmup_instruction_time = time.time() 
+        warmup_instruction_time = time.time()
         print("Time trained model in warm-up mode: ", warmup_instruction_time)
+        run_phase2 = True
+
+    if run_phase2:
     #==========================================
     # Train. 2/2 Finetuning
-    #==========================================      
-        print("================="*5)       
+    #==========================================
+        print("================="*5)
         print("Training model: Phase 2/2 - Finetuning")
         print("================="*5)
         # Check the CNN family to determine the appropriate function to freeze layers
         if CNN_family in ["MaxVit","SwinTransformer"]:
-            model_ft = frozen_layers_fc(trained_warmup_model, args.unfrozen_layers) 
+            model_ft = frozen_layers_fc(trained_warmup_model, args.unfrozen_layers)
         elif CNN_family in ["ConvNeXt","VGG"]:
-            model_ft = frozen_layers_classifier(trained_warmup_model, args.unfrozen_layers) 
+            model_ft = frozen_layers_classifier(trained_warmup_model, args.unfrozen_layers)
         elif CNN_family ==  "VisionTransformer":
             model_ft = frozen_vit(trained_warmup_model, args.unfrozen_layers)
         elif CNN_family in ["DINOv2", "DINO"]:
@@ -241,8 +330,8 @@ if __name__ == '__main__':
             print("ResNet")
             model_ft = frozen_ResNet(trained_warmup_model, args.unfrozen_layers)
         else:
-            model_ft = frozen_layers_fc(trained_warmup_model, args.unfrozen_layers) 
-            
+            model_ft = frozen_layers_fc(trained_warmup_model, args.unfrozen_layers)
+
         # Discriminative learning rates (optional): a smaller LR for the
         # already-unfrozen backbone layers, --lr_finetuning for the head.
         # Off by default (--backbone_lr_finetuning unset) -- identical
@@ -297,27 +386,27 @@ if __name__ == '__main__':
             trainer.fit(trainer_module, train_loader, valid_loader)
             trained_finetuning_model = trainer_module.model
             finetuning_train_history , finetuning_val_history  = trainer_module.metrics_to_dataframe()
-            
+
             finetuning_instruction_time = time.time() ################################ time
             print("Time trained model in finetuning mode: ", finetuning_instruction_time)
-               
+
             df_time = pd.DataFrame()
-            df_time["warmup"] = [warmup_instruction_time - start_warmup] 
+            df_time["warmup"] = [warmup_instruction_time - start_warmup]
             df_time["finetuning"] = [finetuning_instruction_time - warmup_instruction_time]
-            
+
             opt_dict = vars(args)
             df_params = pd.DataFrame(list(opt_dict.items()), columns=['argument', 'value'])
-            
+
             with pd.ExcelWriter(os.path.join(args.output_dir,"history.xlsx")) as writer:
                 warmup_train_history.to_excel(writer,sheet_name="wamup_train")
                 warmup_val_history.to_excel(writer,sheet_name="wamup_val")
                 finetuning_train_history.to_excel(writer,sheet_name="finetuning_train")
                 finetuning_val_history.to_excel(writer,sheet_name="finetuning_val")
                 df_time.to_excel(writer,sheet_name="time")
-                df_params.to_excel(writer,sheet_name="parameters") 
-        except KeyboardInterrupt:            
+                df_params.to_excel(writer,sheet_name="parameters")
+        except KeyboardInterrupt:
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-            print("Interrup trained - no progress saved") 
+            print("Interrup trained - no progress saved")
             sys.exit(1)
 # In[4]            
