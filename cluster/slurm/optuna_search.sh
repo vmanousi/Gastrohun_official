@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
 #SBATCH --time=24:00:00
-#SBATCH --array=0-4
+#SBATCH --array=0-3
 #SBATCH --output=logs/optuna_search_%A_%a.out
 #SBATCH --error=logs/optuna_search_%A_%a.err
 
@@ -21,6 +21,11 @@ source ~/diplomatiki2/.venv/bin/activate
 # deliberately excluded from the search itself (~65x the compute of the
 # cheapest model here) -- it gets a single confirmation run afterward using
 # whatever ratio pattern wins for the other DINOv2 sizes, not a full search.
+#
+# Array is 0-3 (first 4 models), NOT 0-4: the ampere-extd QOS caps
+# MaxSubmitPU at 4, so all 5 tasks can't be submitted at once. Submit the
+# 5th model (dinov2_vitl14, index 4) separately once a slot frees up:
+#   sbatch --array=4-4 cluster/slurm/optuna_search.sh
 #
 # 24h wall-time is a conservative guess for 20 trials with MedianPruner --
 # revisit after the first job's actual per-trial timing is known; the study
