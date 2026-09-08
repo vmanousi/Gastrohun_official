@@ -72,6 +72,10 @@ def get_args_parser():
     parser.add_argument('--normalization', default='dataset', choices=['dataset', 'imagenet'], type=str,
                         help="Pixel normalization stats: 'dataset' (GastroHUN-computed, original paper default) or "
                              "'imagenet' (the stats DINO/DINOv2 backbones were actually pretrained with)")
+    parser.add_argument('--pretrained_backbone', type=str, default=None,
+                        help="Match the value used at train time for *_reg DINOv2 models: builds the backbone "
+                             "arch at --input_size and pre-loads local weights before the trained checkpoint "
+                             "is loaded on top. Default: None (torch.hub arch).")
 
     return parser
 
@@ -228,8 +232,11 @@ if __name__ == '__main__':
     # Load Model
     #==========================================           
         # Load the model
-        # a) Load the backbone
-        model_ft, CNN_family = initialize_model(args.model, args.nb_classes, True, (args.input_size, args.input_size))
+        # a) Load the backbone (--pretrained_backbone builds the *_reg arch at
+        #    input_size and pre-loads local weights; load_model_for_inference
+        #    below then overwrites everything with the trained checkpoint, so
+        #    this only has to produce the right architecture/shapes)
+        model_ft, CNN_family = initialize_model(args.model, args.nb_classes, True, (args.input_size, args.input_size), pretrained_backbone=args.pretrained_backbone)
         for param in model_ft.parameters():
             param.requires_grad = False  
         

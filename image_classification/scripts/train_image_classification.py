@@ -93,6 +93,11 @@ def get_args_parser():
                              "and load these weights into a freshly-initialized (head-only-trainable) "
                              "model before proceeding straight to Phase 2 fine-tuning. Default: None "
                              "(original behavior: Phase 1 runs normally).")
+    parser.add_argument('--pretrained_backbone', type=str, default=None,
+                        help="Path to a local DINOv2 backbone checkpoint to load instead of the torch.hub "
+                             "LVD-142M weights. Only for the *_reg DINOv2 model names. Accepts a "
+                             "{'model': flat_state_dict} generic checkpoint or a {'teacher': {...}} "
+                             "continued-SSL dump (its backbone.* subset is used). Default: None (hub weights).")
 
     return parser
 
@@ -194,7 +199,7 @@ if __name__ == '__main__':
             print("================="*5)
             sys.exit(0)
         print("Training model: Phase 1/1 - Warm-up only (--warmup_only)")
-        model_ft, CNN_family = initialize_model(args.model, args.nb_classes, True, (args.input_size,args.input_size))
+        model_ft, CNN_family = initialize_model(args.model, args.nb_classes, True, (args.input_size,args.input_size), pretrained_backbone=args.pretrained_backbone)
         for param in model_ft.parameters():
             param.requires_grad = False
         trainable_attr = None
@@ -234,7 +239,7 @@ if __name__ == '__main__':
         #==========================================
         os.makedirs(args.output_dir, exist_ok=True)
         print("Skipping Phase 1 -- loading warm-up checkpoint: {}".format(args.resume_from_warmup))
-        model_ft, CNN_family = initialize_model(args.model, args.nb_classes, True, (args.input_size,args.input_size))
+        model_ft, CNN_family = initialize_model(args.model, args.nb_classes, True, (args.input_size,args.input_size), pretrained_backbone=args.pretrained_backbone)
         for param in model_ft.parameters():
             param.requires_grad = False
         trainable_attr = None
@@ -263,7 +268,7 @@ if __name__ == '__main__':
         print("Training model: Phase 1/2 - Warm-up")
         try:
             # Initialize the model
-            model_ft, CNN_family = initialize_model(args.model, args.nb_classes, True, (args.input_size,args.input_size))
+            model_ft, CNN_family = initialize_model(args.model, args.nb_classes, True, (args.input_size,args.input_size), pretrained_backbone=args.pretrained_backbone)
             # Freeze all parameters of the model
             for param in model_ft.parameters():
                 param.requires_grad = False
