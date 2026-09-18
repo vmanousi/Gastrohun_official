@@ -158,8 +158,10 @@ def main():
             ax.scatter(np.full(len(vals), i) + np.random.normal(0, 0.06, len(vals)), vals,
                        s=4, color=color, alpha=0.5)
         ax.set_xticks(range(len(order)))
-        ax.set_xticklabels(order, rotation=60, ha="right",
-                           fontweight=["bold" if m in NEW_MODELS else "normal" for m in order])
+        tick_labels = ax.set_xticklabels(order, rotation=60, ha="right")
+        for lbl, m in zip(tick_labels, order):
+            if m in NEW_MODELS:
+                lbl.set_fontweight("bold")
         ax.set_ylabel("Macro F1-score (%)")
         ax.set_title(f"GastroHUN Scenario A, {variant} -- all models ranked "
                      f"(continued-DINOv2 in red, generic dinov2_vits14_reg in green)")
