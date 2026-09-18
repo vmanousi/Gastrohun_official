@@ -143,6 +143,31 @@ def main():
     print("\n=== TABLE B (SSL only) ===")
     print(df_all[df_all["model"].isin(SSL_MODELS)].sort_values("finetuned_mean", ascending=False).to_string(index=False))
 
+    # --- significance: continued vs its exact matched generic baseline -----------
+    # Same CI-overlap convention as compare_frozen_vs_finetuned.py's ci_overlap
+    # column: non-overlapping 95% CIs (mean +/- t-margin) -> "significant".
+    sig_rows = []
+    g = df_all.set_index("model").loc["dinov2_vits14_reg_generic"]
+    c = df_all.set_index("model").loc["dinov2_vits14_reg_continued"]
+    for variant in ("frozen", "finetuned"):
+        g_mean, g_margin = g[f"{variant}_mean"], g[f"{variant}_margin"]
+        c_mean, c_margin = c[f"{variant}_mean"], c[f"{variant}_margin"]
+        g_lo, g_hi = g_mean - g_margin, g_mean + g_margin
+        c_lo, c_hi = c_mean - c_margin, c_mean + c_margin
+        overlap = not (c_hi < g_lo or g_hi < c_lo)
+        sig_rows.append({
+            "variant": variant,
+            "generic_mean": g_mean, "generic_margin": g_margin,
+            "continued_mean": c_mean, "continued_margin": c_margin,
+            "gap": round(c_mean - g_mean, 2),
+            "ci_overlap": overlap,
+            "significant": not overlap,
+        })
+    df_sig = pd.DataFrame(sig_rows)
+    df_sig.to_csv(RESULTS_DIR / "continued_vs_generic_significance.csv", index=False)
+    print("\n=== SIGNIFICANCE: continued vs generic (matched dinov2_vits14_reg baseline) ===")
+    print(df_sig.to_string(index=False))
+
     df_raw = pd.DataFrame(raw)
     for variant in ("frozen", "finetuned"):
         sub = df_all.dropna(subset=[f"{variant}_mean"]).sort_values(f"{variant}_mean", ascending=False)
