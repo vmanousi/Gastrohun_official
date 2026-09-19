@@ -51,14 +51,23 @@ BASELINE_MODELS = [
 BEST_RECIPE = {}
 for m in BASELINE_MODELS:
     BEST_RECIPE[m] = (SINGLE_LR_ROOT, "single_lr", "iter1")
-BEST_RECIPE["dino_vits16"] = (MID_LR_ROOT, "mid_lr", "iter1")
+BEST_RECIPE["dino_vits16"] = [(MID_LR_ROOT, "mid_lr", ["iter1"])]
 for m in ["dino_vits8", "dino_vitb16", "dino_vitb8"]:
-    BEST_RECIPE[m] = (SINGLE_LR_ROOT, "single_lr", "iter1")
+    BEST_RECIPE[m] = [(SINGLE_LR_ROOT, "single_lr", ["iter1"])]
 for m in ["dinov2_vits14", "dinov2_vitb14", "dinov2_vitl14", "dinov2_vitg14"]:
-    BEST_RECIPE[m] = (DISCRIMINATIVE_LR_ROOT, "discriminative_lr", "iter1")
-# our two new entries -- same discriminative_lr recipe, isolated root
-BEST_RECIPE["dinov2_vits14_reg_generic"] = (CONTINUED_DISCLR_ROOT, "discriminative_lr", "iter1")
-BEST_RECIPE["dinov2_vits14_reg_continued"] = (CONTINUED_DISCLR_ROOT, "discriminative_lr", "iter1")
+    BEST_RECIPE[m] = [(DISCRIMINATIVE_LR_ROOT, "discriminative_lr", ["iter1"])]
+for m in BASELINE_MODELS:
+    BEST_RECIPE[m] = [(SINGLE_LR_ROOT, "single_lr", ["iter1"])]
+
+# our two new entries: DON'T assume discriminative_lr wins here just because it
+# won for the other 4 DINOv2 variants -- pick dynamically between the two
+# recipes we actually have results for (each candidate's own real bootstrap
+# mean decides it, exactly like the rest of this table was decided).
+for m in ["dinov2_vits14_reg_generic", "dinov2_vits14_reg_continued"]:
+    BEST_RECIPE[m] = [
+        (SINGLE_LR_ROOT, "single_lr", ["iter1", "iter2", "iter3"]),   # 3 seeds, primary comparison
+        (CONTINUED_DISCLR_ROOT, "discriminative_lr", ["iter1"]),      # 1 seed, seed=42, this track
+    ]
 
 ALL_MODELS = list(BEST_RECIPE.keys())
 NEW_MODELS = {"dinov2_vits14_reg_generic", "dinov2_vits14_reg_continued"}
@@ -91,44 +100,58 @@ def mean_and_margin(values, alpha=0.05):
     return mean, t_crit * sem
 
 
+def load_predictions(root, model, iterdir):
+    path = root / model / iterdir / "predict.json"
+    if not path.exists():
+        return None
+    df = pd.read_json(path)
+    df = df[(df["set_type"] == "Test") & (~df["Complete agreement"].isnull())].copy()
+    return df.reset_index(drop=False)
+
+
+def pooled_bootstrap_values(root, model, iterdirs, df_bootstrap):
+    """Pooled per-resample macro-F1 across all seeds for one (model, recipe) candidate."""
+    out = []
+    for iterdir in iterdirs:
+        df = load_predictions(root, model, iterdir)
+        if df is None:
+            return None
+        by_index = df.set_index("index")
+        for _, row in df_bootstrap.iterrows():
+            sel = by_index.loc[by_index.index.intersection(row["test_index"])]
+            out.append(f1_score(sel["Complete agreement"].astype(np.int64),
+                                sel["PredictedClass"].astype(np.int64),
+                                average="macro", zero_division=0) * 100)
+    return out
+
+
 def main():
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     df_bootstrap = pd.read_json(BOOTSTRAP_PATH)
 
     print("EXPLORATORY best-recipe-per-model comparison -- NOT the controlled result.")
-    print("Loading predictions using each model's best-validated recipe...\n")
+    print("Resolving each model's best-validated recipe (highest bootstrap mean among tried candidates)...\n")
 
-    frames, missing_models = [], []
+    records, resolved, missing_models = [], {}, []
     for model in ALL_MODELS:
-        root, recipe, iterdir = BEST_RECIPE[model]
-        path = root / model / iterdir / "predict.json"
-        if not path.exists():
+        best = None  # (mean, recipe, values)
+        for root, recipe, iterdirs in BEST_RECIPE[model]:
+            vals = pooled_bootstrap_values(root, model, iterdirs, df_bootstrap)
+            if vals is None:
+                print(f"  candidate missing: {model} ({recipe}) under {root.name}")
+                continue
+            mean = np.mean(vals)
+            tag = "" if len(BEST_RECIPE[model]) == 1 else f"  [candidate: {recipe} = {mean:.2f}]"
+            print(f"  {model} ({recipe}): {len(vals)} bootstrap draws, mean {mean:.2f}{tag}")
+            if best is None or mean > best[0]:
+                best = (mean, recipe, vals)
+        if best is None:
             missing_models.append(model)
-            print(f"  SKIP {model} ({recipe}) -- missing {path}")
             continue
-        df = pd.read_json(path)
-        df = df[(df["set_type"] == "Test") & (~df["Complete agreement"].isnull())].copy()
-        df = df.reset_index(drop=False)
-        df["architecture"] = model
-        df["recipe"] = recipe
-        frames.append(df[PRED_COLS + ["index", "architecture", "recipe"]])
-        print(f"  {model} ({recipe}): {len(df)} test rows")
-
-    df_prediction = pd.concat(frames, ignore_index=True)
-
-    records = []
-    for model in ALL_MODELS:
-        if model in missing_models:
-            continue
-        df_model = df_prediction[df_prediction["architecture"] == model]
-        for _, row in df_bootstrap.iterrows():
-            sel = df_model[df_model["index"].isin(row["test_index"])]
-            records.append({
-                "model": model, "family": family_of(model), "recipe": BEST_RECIPE[model][1],
-                "macro_f1": f1_score(sel["Complete agreement"].astype(np.int64),
-                                     sel["PredictedClass"].astype(np.int64),
-                                     average="macro", zero_division=0) * 100,
-            })
+        _, recipe, vals = best
+        resolved[model] = recipe
+        for v in vals:
+            records.append({"model": model, "family": family_of(model), "recipe": recipe, "macro_f1": v})
 
     df_combined = pd.DataFrame(records)
     df_combined.to_csv(RESULTS_DIR / "best_recipe_with_continued_bootstrap_metrics.csv", index=False)
@@ -139,7 +162,7 @@ def main():
             continue
         vals = df_combined[df_combined["model"] == model]["macro_f1"]
         mean, margin = mean_and_margin(vals)
-        rows.append({"model": model, "family": family_of(model), "recipe": BEST_RECIPE[model][1],
+        rows.append({"model": model, "family": family_of(model), "recipe": resolved[model],
                      "macro_f1_mean": round(mean, 2), "macro_f1_margin": round(margin, 2)})
     df_summary = pd.DataFrame(rows).sort_values("macro_f1_mean", ascending=False)
     df_summary.to_csv(RESULTS_DIR / "best_recipe_with_continued_summary.csv", index=False)
