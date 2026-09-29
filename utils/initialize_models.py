@@ -12,15 +12,17 @@ import torch.nn as nn
 
 
 def initialize_model(model_name,num_classes,feature_extracting,input_size=(224,224),pretrained_backbone=None ):
-    # pretrained_backbone: optional path to a local DINOv2 backbone checkpoint to
-    # load INSTEAD of the torch.hub LVD-142M weights. Only honoured for the
-    # `*_reg` DINOv2 names. Two accepted layouts:
+    # pretrained_backbone: optional path to a local backbone checkpoint to load
+    # INSTEAD of the torch.hub pretrained weights. Honoured for the `*_reg`
+    # DINOv2 names and for `dino_vits16` (DINO v1). Two accepted layouts:
     #   {"model": <flat vit state_dict>}        -- e.g. the generic reg4 pretrain,
     #                                              pos_embed already at input_size
     #   {"teacher": {"backbone.*": ..., ...}}   -- a continued-SSL teacher dump;
     #                                              the backbone.* subset is used
-    # Both are loaded into a `pretrained=False, img_size=input_size` reg model, so
-    # the generic and the continued arm share an identical code path.
+    # Both are loaded into a `pretrained=False` model (DINOv2 additionally takes
+    # `img_size=input_size`; DINO v1's vit_small interpolates pos_embed at
+    # forward time instead, so no img_size is needed at construction), so the
+    # generic and the continued arm share an identical code path.
     # Initialize these variables which will be set in this if statement. Each of these
     #   variables is model specific.
     model_ft = None    
@@ -214,7 +216,10 @@ def initialize_model(model_name,num_classes,feature_extracting,input_size=(224,2
         CNN_family = "DINOv2"
 # DINO (v1)
     elif model_name in DINO_EMBED_DIMS:
-        backbone = torch.hub.load('facebookresearch/dino:main', model_name)
+        if pretrained_backbone is not None:
+            backbone = _build_dino_backbone_from_checkpoint(model_name, pretrained_backbone)
+        else:
+            backbone = torch.hub.load('facebookresearch/dino:main', model_name)
         model_ft = DinoV2Classifier(backbone, DINO_EMBED_DIMS[model_name], num_classes)
         set_parameter_requires_grad(model_ft, feature_extracting)
         CNN_family = "DINO"
@@ -269,6 +274,32 @@ DINO_EMBED_DIMS = {
     "dino_vitb16": 768,
     "dino_vitb8": 768,
 }
+
+
+def _build_dino_backbone_from_checkpoint(model_name, checkpoint_path):
+    """Build a DINO v1 backbone (pretrained=False) and load local weights from
+    checkpoint_path. Same two accepted layouts as the DINOv2 helper above; see
+    initialize_model's docstring."""
+    backbone = torch.hub.load('facebookresearch/dino:main', model_name, pretrained=False)
+    ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    if "model" in ckpt and isinstance(ckpt["model"], dict):
+        state_dict = ckpt["model"]
+    elif "teacher" in ckpt and isinstance(ckpt["teacher"], dict):
+        state_dict = {k[len("backbone."):]: v for k, v in ckpt["teacher"].items()
+                      if k.startswith("backbone.")}
+        if not state_dict:
+            raise ValueError(f"{checkpoint_path}: 'teacher' dict has no 'backbone.*' keys")
+    else:
+        raise ValueError(f"{checkpoint_path}: expected a 'model' or 'teacher' top-level key")
+
+    missing, unexpected = backbone.load_state_dict(state_dict, strict=False)
+    if missing or unexpected:
+        raise RuntimeError(
+            f"backbone load mismatch for {model_name} from {checkpoint_path}:\n"
+            f"  missing={missing}\n  unexpected={unexpected}")
+    print(f"[initialize_model] loaded DINO backbone weights from {checkpoint_path} "
+          f"({len(state_dict)} tensors)")
+    return backbone
 
 class DinoV2Classifier(nn.Module):
     """Wraps a DINO/DINOv2 ViT backbone (self-supervised, torch.hub) with a
