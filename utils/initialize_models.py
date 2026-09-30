@@ -278,8 +278,12 @@ DINO_EMBED_DIMS = {
 
 def _build_dino_backbone_from_checkpoint(model_name, checkpoint_path):
     """Build a DINO v1 backbone (pretrained=False) and load local weights from
-    checkpoint_path. Same two accepted layouts as the DINOv2 helper above; see
-    initialize_model's docstring."""
+    checkpoint_path. Three accepted layouts:
+      {"model": <flat vit state_dict>}       -- our extract_backbones.py output
+      {"teacher": {"backbone.*": ..., ...}}  -- a continued-SSL full-state dump
+      <flat vit state_dict>                  -- the official dino_deitsmall16_pretrain.pth,
+                                                 which has no top-level wrapper at all
+    """
     backbone = torch.hub.load('facebookresearch/dino:main', model_name, pretrained=False)
     ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     if "model" in ckpt and isinstance(ckpt["model"], dict):
@@ -290,7 +294,7 @@ def _build_dino_backbone_from_checkpoint(model_name, checkpoint_path):
         if not state_dict:
             raise ValueError(f"{checkpoint_path}: 'teacher' dict has no 'backbone.*' keys")
     else:
-        raise ValueError(f"{checkpoint_path}: expected a 'model' or 'teacher' top-level key")
+        state_dict = ckpt
 
     missing, unexpected = backbone.load_state_dict(state_dict, strict=False)
     if missing or unexpected:
